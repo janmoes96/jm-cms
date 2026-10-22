@@ -38,13 +38,13 @@ class UpdatePageRequest extends FormRequest
             'blocks.*.blockable.content' => ['nullable', 'string'],
             'blocks.*.blockable.title' => ['nullable', 'string', 'max:255'],
             
-            // Galerij-afbeeldingen
+            // Galerij-afbeeldingen (met robuuste mimes regels voor jpg/jpeg/png/webp)
             'blocks.*.images' => ['nullable', 'array'],
             'blocks.*.images.*.id' => ['nullable', 'integer', 'exists:gallery_images,id'],
-            'blocks.*.images.*.file' => ['nullable', 'file', 'image', 'max:5120'],
+            'blocks.*.images.*.file' => ['nullable', 'file', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'blocks.*.images.*.sort_order' => ['nullable', 'integer'],
 
-            // DEZE TOEVOEGEN: Te verwijderen afbeelding ID's doorlaten door de validatie
+            // Te verwijderen afbeelding ID's doorlaten door de validatie
             'blocks.*.deleted_image_ids' => ['nullable', 'array'],
             'blocks.*.deleted_image_ids.*' => ['integer', 'exists:gallery_images,id'],
         ];

@@ -26,9 +26,9 @@ class StorePageRequest extends FormRequest
             'blocks.*.content' => ['nullable', 'string'], // Voor tekst-blokken
             'blocks.*.title' => ['nullable', 'string', 'max:255'], // Voor galerij-blokken
             
-            // Validatie voor galerij-afbeeldingen
+            // Validatie voor galerij-afbeeldingen (met robuuste mimes regels voor jpg/jpeg/png/webp)[cite: 1]
             'blocks.*.images' => ['nullable', 'array'],
-            'blocks.*.images.*.file' => ['nullable', 'file', 'image', 'max:5120'], // Max 5MB per foto
+            'blocks.*.images.*.file' => ['nullable', 'file', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'blocks.*.images.*.sort_order' => ['nullable', 'integer'],
         ];
     }

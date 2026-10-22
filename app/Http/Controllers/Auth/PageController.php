@@ -51,7 +51,25 @@ class PageController extends Controller
 
     public function update(UpdatePageRequest $request, Page $page)
     {
-        // dd($request->all(), $page->id);
+        
+        if ($request->has('blocks')) {
+            foreach ($request->input('blocks', []) as $blockIndex => $block) {
+                if (!empty($block['images'])) {
+                    foreach ($block['images'] as $imageIndex => $imageData) {
+                        if (isset($imageData['file']) && $imageData['file'] instanceof \Illuminate\Http\UploadedFile) {
+                            $file = $imageData['file'];
+                            
+                            \Illuminate\Support\Facades\Log::error("Upload fout bij blok {$blockIndex}, afbeelding {$imageIndex}:", [
+                                'error_code' => $file->getError(),
+                                'error_message' => $file->getErrorMessage(),
+                                'original_name' => $file->getClientOriginalName(),
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
+
         $this->pageService->update($page, $request->validated());
 
         return redirect()->route('admin.pages.index')

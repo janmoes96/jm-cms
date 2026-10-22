@@ -34,12 +34,11 @@ interface PageFormProps {
     isEditing?: boolean;
 }
 
-// Koppel alle mogelijke sleutels aan de juiste componenten
-const BLOCK_COMPONENTS: Record<string, ComponentType<{ block: any; onChange: (updated: any) => void }>> = {
+const BLOCK_COMPONENTS: Record<string, ComponentType<{ block: any; onChange: (updated: any) => void; errors?: Record<string, string> }>> = {
     text: TextBlockComponent,
-    'App\\Models\\Auth\\Blocks\\TextBlock': TextBlockComponent,
     gallery: GalleryBlockComponent,
-    'App\\Models\\Auth\\Blocks\\GalleryBlock': GalleryBlockComponent,
+    TextBlock: TextBlockComponent,
+    GalleryBlock: GalleryBlockComponent,
 };
 
 export default function PageForm({ page, isEditing = false }: PageFormProps) {
@@ -55,7 +54,7 @@ export default function PageForm({ page, isEditing = false }: PageFormProps) {
             ...data.blocks,
             {
                 type,
-                blockable_type: type === 'text' ? 'App\\Models\\Auth\\Blocks\\TextBlock' : 'App\\Models\\Auth\\Blocks\\GalleryBlock',
+                blockable_type: type,
                 sort_order: data.blocks.length,
                 content: type === 'text' ? '' : undefined,
                 title: type === 'gallery' ? '' : undefined,
@@ -75,13 +74,14 @@ export default function PageForm({ page, isEditing = false }: PageFormProps) {
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         console.log('Formulier data die wordt verzonden:', data);
-        // forceFormData is cruciaal om bestanden mee te sturen via PUT/PATCH of POST
+
         const options = {
             forceFormData: true,
         };
 
         if (isEditing) {
-            put(route('admin.pages.update', page?.id), options);
+            if (!page?.id) return;
+            put(route('admin.pages.update', page.id), options);
         } else {
             post(route('admin.pages.store'), options);
         }
@@ -89,6 +89,18 @@ export default function PageForm({ page, isEditing = false }: PageFormProps) {
 
     return (
         <form onSubmit={submit} className="space-y-6 w-full">
+            {/* Globale foutmelding als er validatiefouten zijn */}
+            {Object.keys(errors).length > 0 && (
+                <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 p-4 rounded-md text-red-700 dark:text-red-300 text-sm">
+                    <p className="font-semibold">Controleer het formulier:</p>
+                    <ul className="list-disc list-inside mt-1 space-y-1">
+                        {Object.entries(errors).map(([key, value]) => (
+                            <li key={key}>{value}</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
             {/* Basis Pagina Velden */}
             <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg shadow border border-gray-200 dark:border-zinc-800 space-y-4">
                 <h2 className="text-lg font-medium text-gray-900 dark:text-white">Algemene Informatie</h2>
@@ -153,13 +165,17 @@ export default function PageForm({ page, isEditing = false }: PageFormProps) {
                 <div className="space-y-4">
                     {data.blocks.map((block, index) => {
                         const blockKey = block.type || block.blockable_type || '';
-                        const SpecificBlockComponent = BLOCK_COMPONENTS[blockKey];
+                        const SpecificBlockComponent = BLOCK_COMPONENTS[blockKey] || BLOCK_COMPONENTS[blockKey.toLowerCase()];
+
+                        // Zoek of er specifieke fouten zijn voor dit blok (bijv. blocks.0.images.1.file)
+                        const blockErrorKey = `blocks.${index}`;
+                        const hasBlockError = Object.keys(errors).some((key) => key.startsWith(blockErrorKey));
 
                         return (
-                            <div key={index} className="border border-gray-200 dark:border-zinc-800 p-4 rounded-md bg-gray-50 dark:bg-zinc-800/50 relative space-y-3">
+                            <div key={index} className={`border p-4 rounded-md bg-gray-50 dark:bg-zinc-800/50 relative space-y-3 ${hasBlockError ? 'border-red-500 dark:border-red-500' : 'border-gray-200 dark:border-zinc-800'}`}>
                                 <div className="flex justify-between items-center">
                                     <span className="text-xs font-bold uppercase text-gray-500 dark:text-gray-400">
-                                        Blok {index + 1}: {blockKey.includes('TextBlock') ? 'text' : blockKey.includes('GalleryBlock') ? 'gallery' : blockKey}
+                                        Blok {index + 1}: {blockKey}
                                     </span>
                                     <button
                                         type="button"
@@ -184,6 +200,17 @@ export default function PageForm({ page, isEditing = false }: PageFormProps) {
                                     />
                                 ) : (
                                     <p className="text-red-500 text-sm">Onbekend blok type ({blockKey})</p>
+                                )}
+
+                                {/* Toon specifieke fouten voor dit specifieke blok */}
+                                {hasBlockError && (
+                                    <div className="text-red-600 dark:text-red-400 text-xs space-y-1 mt-2">
+                                        {Object.entries(errors)
+                                            .filter(([key]) => key.startsWith(blockErrorKey))
+                                            .map(([key, msg]) => (
+                                                <p key={key}>• {msg}</p>
+                                            ))}
+                                    </div>
                                 )}
                             </div>
                         );

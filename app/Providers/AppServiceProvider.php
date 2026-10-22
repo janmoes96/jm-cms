@@ -9,6 +9,10 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Schema;
 
+use Illuminate\Database\Eloquent\Relations\Relation; 
+use App\Models\Auth\Blocks\TextBlock;
+use App\Models\Auth\Blocks\GalleryBlock;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -27,6 +31,10 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         Schema::defaultStringLength(191);
 
+        Relation::morphMap([
+            'text' => TextBlock::class,
+            'gallery' => GalleryBlock::class,
+        ]);
     }
 
     /**

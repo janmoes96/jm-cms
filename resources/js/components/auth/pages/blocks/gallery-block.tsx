@@ -14,7 +14,7 @@ interface GalleryBlockProps {
         id?: number;
         title?: string;
         images?: GalleryImage[];
-        deleted_image_ids?: number[]; // Handig om bij te houden voor de backend
+        deleted_image_ids?: number[];
         [key: string]: any;
     };
     onChange: (updatedBlock: any) => void;
@@ -33,13 +33,13 @@ export default function GalleryBlockComponent({ block, onChange }: GalleryBlockP
 
     // Nieuwe bestanden toevoegen
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files) return;
+        if (!e.target.files || e.target.files.length === 0) return;
 
         const filesArray = Array.from(e.target.files);
         
-        // Maak lokale previews aan voor de nieuwe bestanden
+        // Maak objecten aan waarbij we het echte bestand onder 'file' bewaren
         const newImages: GalleryImage[] = filesArray.map((file, index) => ({
-            file: file,
+            file: file, // Echte File instantie
             preview: URL.createObjectURL(file),
             sort_order: images.length + index,
         }));
@@ -49,23 +49,21 @@ export default function GalleryBlockComponent({ block, onChange }: GalleryBlockP
             images: [...images, ...newImages],
         });
 
-        // Reset de file input zodat dezelfde foto eventueel opnieuw geselecteerd kan worden
+        // Reset de file input
         e.target.value = '';
     };
 
-    // Afbeelding verwijderen (zowel lokaal als database)
+    // Afbeelding verwijderen
     const handleRemoveImage = (indexToRemove: number) => {
         const imageToRemove = images[indexToRemove];
         const updatedImages = images.filter((_, index) => index !== indexToRemove);
 
         let deletedIds = block.deleted_image_ids || [];
 
-        // Als de afbeelding al in de database stond (heeft een ID), voeg hem toe aan de verwijderlijst
         if (imageToRemove.id) {
             deletedIds = [...deletedIds, imageToRemove.id];
         }
 
-        // Geef de opgeschoonde lijst en eventuele te verwijderen ID's door aan de parent
         onChange({
             ...block,
             images: updatedImages,
@@ -97,7 +95,6 @@ export default function GalleryBlockComponent({ block, onChange }: GalleryBlockP
                 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-3">
                     {images.map((img, index) => {
-                        // Bepaal de juiste bron voor de thumbnail (lokale preview of bestaande url/pad)
                         const imgSrc = img.preview || img.url || (img.image_path ? `/storage/${img.image_path}` : '');
 
                         return (
@@ -112,7 +109,6 @@ export default function GalleryBlockComponent({ block, onChange }: GalleryBlockP
                                     <span className="text-xs text-gray-400">Geen voorbeeld</span>
                                 )}
 
-                                {/* Verwijder knop per afbeelding */}
                                 <button
                                     type="button"
                                     onClick={() => handleRemoveImage(index)}
@@ -128,7 +124,7 @@ export default function GalleryBlockComponent({ block, onChange }: GalleryBlockP
                     })}
                 </div>
 
-                {/* Upload knop */}
+                {/* Upload input */}
                 <input
                     type="file"
                     multiple
