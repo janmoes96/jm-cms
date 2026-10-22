@@ -1,0 +1,72 @@
+services:
+  jm-cms:
+    build: .
+    container_name: jm-cms
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:8000:8000'
+    volumes:
+        - ./:/var/www/html
+        - vendor:/var/www/html/vendor
+        - node_modules:/var/www/html/node_modules
+    command: ['php', 'artisan', 'serve', '--host=0.0.0.0', '--port=8000']
+    env_file:
+        - .env
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: laravel
+      DB_USERNAME: root
+      DB_PASSWORD: jm-cms
+    networks:
+      - jm-cms
+
+  vite:
+    build: .
+    container_name: jm-cms-vite
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:5173:5173'
+    volumes:
+      - ./:/var/www/html
+      - vendor:/var/www/html/vendor
+      - node_modules:/var/www/html/node_modules
+    command: [ 'npm', 'run', 'dev', '--', '--host', '0.0.0.0' ]
+    networks:
+      - jm-cms
+
+  db:
+      image: docker.io/mysql:9.7.4
+      container_name: db
+      restart: unless-stopped
+      environment:
+        MYSQL_ROOT_PASSWORD: jm-cms
+        MYSQL_DATABASE: laravel
+      volumes:
+        - db_data:/var/lib/mysql
+      healthcheck:
+        test: [ "CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysqladmin ping -h localhost -u root --silent" ]
+        interval: 5s
+        timeout: 5s
+        retries: 20
+      networks:
+        - jm-cms
+      ports:
+        - '127.0.0.1:3306:3306'
+
+volumes:
+  vendor:
+  node_modules:
+  db_data:
+
+networks:
+    jm-cms:
+        name: jm-cms
+        driver: bridge
+
+x-podman:
+    in_pod: false
